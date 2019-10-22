@@ -7,3 +7,27 @@ This repository holds the files of the openIMIS Backend Contribution reference m
 
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/openimis/openimis-be-policy_py.svg)](https://codeclimate.com/github/openimis/openimis-be-contribution_py/maintainability)
 [![Test Coverage](https://img.shields.io/codeclimate/coverage/openimis/openimis-be-contribution_py.svg)](https://codeclimate.com/github/openimis/openimis-be-contribution_py)
+
+## ORM mapping:
+* tblPremium > Premium (without Payer relationship)
+
+## Listened Django Signals
+None
+
+## Services
+* ByPolicyPremiumsAmountService, aggregates (sum) the premium amounts of a Policy
+
+## Reports (template can be overloaded via report.ReportDefinition)
+None
+
+## GraphQL Queries
+None
+
+## GraphQL Mutations - each mutation emits default signals and return standard error lists (cfr. openimis-be-core_py)
+None
+
+## Configuration options (can be changed via core.ModuleConfiguration)
+None
+
+## openIMIS Modules Dependencies
+* policy.models.Policy
