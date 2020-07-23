@@ -13,10 +13,14 @@ from .gql_queries import *  # lgtm [py/polluting-import]
 from .gql_mutations import *  # lgtm [py/polluting-import]
 
 class Query(graphene.ObjectType):
-    premiums = OrderedDjangoFilterConnectionField(PremiumGQLType)
+    premiums = OrderedDjangoFilterConnectionField(
+        PremiumGQLType,
+        orderBy=graphene.List(of_type=graphene.String),
+    )
     premiums_by_policies = OrderedDjangoFilterConnectionField(
         PremiumGQLType,
-        policy_uuids=graphene.List(graphene.String, required=True)
+        policy_uuids=graphene.List(graphene.String, required=True),
+        orderBy=graphene.List(of_type=graphene.String),
     )
 
     def resolve_premiums(self, info, **kwargs):
