@@ -11,7 +11,7 @@ class Premium(core_models.VersionedModel):
     id = models.AutoField(db_column='PremiumId', primary_key=True)
     uuid = models.CharField(db_column='PremiumUUID', max_length=36, default=uuid.uuid4, unique=True)
     policy = models.ForeignKey(
-        Policy, models.DO_NOTHING, db_column='PolicyID')
+        Policy, models.DO_NOTHING, db_column='PolicyID', related_name="premiums")
     payer = models.ForeignKey(
         Payer, models.DO_NOTHING, db_column='PayerID', blank=True, null=True)
     amount = models.DecimalField(
