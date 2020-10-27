@@ -5,7 +5,7 @@ import graphene_django_optimizer as gql_optimizer
 
 from .apps import ContributionConfig
 from django.utils.translation import gettext as _
-from core.schema import OrderedDjangoFilterConnectionField
+from core.schema import signal_mutation_module_before_mutating, OrderedDjangoFilterConnectionField
 from policy import models as policy_models
 from .models import Premium
 # We do need all queries and mutations in the namespace here.
@@ -33,3 +33,32 @@ class Query(graphene.ObjectType):
             raise PermissionDenied(_("unauthorized"))
         policies = policy_models.Policy.objects.values_list('id').filter(Q(uuid__in=kwargs.get('policy_uuids')))
         return Premium.objects.filter(Q(policy_id__in=policies), *filter_validity(**kwargs))
+
+
+def set_premium_deleted(premium):
+    try:
+        premium.delete_history()
+        return []
+    except Exception as exc:
+        return {
+            'title': premium.uuid,
+            'list': [{
+                'message': _("premium.mutation.failed_to_delete_premium") % {'premium': str(premium)},
+                'detail': premium.uuid
+            }]
+        }
+
+
+def on_policy_mutation(sender, **kwargs):
+    errors = []
+    if kwargs.get("mutation_class") == 'DeletePoliciesMutation':
+        uuids = kwargs['data'].get('uuids', [])
+        policies = policy_models.Policy.objects.prefetch_related("premiums").filter(uuid__in=uuids).all()
+        for policy in policies:
+            for premium in policy.premiums.all():
+                errors += set_premium_deleted(premium)
+    return errors
+
+
+def bind_signals():
+    signal_mutation_module_before_mutating["policy"].connect(on_policy_mutation)
