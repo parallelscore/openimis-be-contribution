@@ -12,6 +12,7 @@ from .models import Premium
 from .gql_queries import *  # lgtm [py/polluting-import]
 from .gql_mutations import *  # lgtm [py/polluting-import]
 
+
 class Query(graphene.ObjectType):
     premiums = OrderedDjangoFilterConnectionField(
         PremiumGQLType,

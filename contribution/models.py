@@ -3,8 +3,16 @@ import uuid
 from core import fields
 from core import models as core_models
 from django.db import models
+from django.utils.translation import gettext_lazy
 from policy.models import Policy
 from payer.models import Payer
+
+
+class PayTypeChoices(models.TextChoices):
+    BANK_TRANSFER = "B", gettext_lazy("Bank transfer")
+    CASH = "C", gettext_lazy("Cash")
+    MOBILE = "M", gettext_lazy("Mobile phone")
+    FUNDING = "F", gettext_lazy("Funding")
 
 
 class Premium(core_models.VersionedModel):
@@ -18,7 +26,7 @@ class Premium(core_models.VersionedModel):
         db_column='Amount', max_digits=18, decimal_places=2)
     receipt = models.CharField(db_column='Receipt', max_length=50)
     pay_date = fields.DateField(db_column='PayDate')
-    pay_type = models.CharField(db_column='PayType', max_length=1)
+    pay_type = models.CharField(db_column='PayType', max_length=1, choices=PayTypeChoices.choices)
     is_photo_fee = models.BooleanField(
         db_column='isPhotoFee', blank=True, null=True)
     is_offline = models.BooleanField(
