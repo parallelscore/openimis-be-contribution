@@ -13,6 +13,9 @@ class PremiumGQLType(DjangoObjectType):
             "uuid": ["exact"],
             "amount": ["exact", "lt", "lte", "gt", "gte"],
             "pay_date": ["exact", "lt", "lte", "gt", "gte"],
+            "pay_type": ["exact"],
+            "is_photo_fee": ["exact"],
+            "receipt": ["exact", "icontains"],
             **prefix_filterset("payer__", PayerGQLType._meta.filter_fields),
             **prefix_filterset("policy__", PolicyGQLType._meta.filter_fields)
         }
