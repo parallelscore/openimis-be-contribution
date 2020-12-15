@@ -69,11 +69,9 @@ def add_fund(product_id, payer_id, pay_date, amount, receipt, audit_user_id, is_
     family = Insuree.objects.filter(validity_to__isnull=True).filter(chf_id=FUNDING_CHF_ID)\
         .filter(family__location_id=product.location_id).first()
 
-    # TODO put this into the Config
-    levels = ["R", "D", "W", "V"]
     fundings = []
     funding_parent = None  # Top Funding has no parent, then the loop will chain them
-    for level in levels:
+    for level in LocationConfig.location_types:
         level_funding, funding_created = Location.objects.get_or_create(
             code=f"F{level}",
             name="Funding",

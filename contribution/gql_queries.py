@@ -20,3 +20,4 @@ class PremiumGQLType(DjangoObjectType):
             **prefix_filterset("policy__", PolicyGQLType._meta.filter_fields)
         }
         connection_class = ExtendedConnection
+
