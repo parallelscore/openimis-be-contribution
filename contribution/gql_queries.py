@@ -5,6 +5,7 @@ from core import prefix_filterset, filter_validity, ExtendedConnection
 from policy.schema import PolicyGQLType
 from payer.schema import PayerGQLType
 
+
 class PremiumGQLType(DjangoObjectType):
     class Meta:
         model = Premium

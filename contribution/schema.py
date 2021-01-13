@@ -69,6 +69,12 @@ def set_premium_deleted(premium):
         }
 
 
+class Mutation(graphene.ObjectType):
+    delete_premium = DeletePremiumsMutation.Field()
+    create_premium = CreatePremiumMutation.Field()
+    update_premium = UpdatePremiumMutation.Field()
+
+
 def on_policy_mutation(sender, **kwargs):
     errors = []
     if kwargs.get("mutation_class") == 'DeletePoliciesMutation':
