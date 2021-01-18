@@ -17,14 +17,13 @@ class PremiumBase:
     id = graphene.Int(required=False, read_only=True)
     uuid = graphene.String(required=False)
     policy_uuid = graphene.String(required=True)
-    payer_uuid = graphene.String()
-    amount = graphene.Int()  # TODO use float or string to avoid binary rounding ?
+    payer_id = graphene.String()
+    amount = graphene.Decimal()
     receipt = graphene.String()
     pay_date = graphene.Date()
     pay_type = graphene.String(max_length=1)
-    is_offline = graphene.Boolean()
-    is_photo_fee = graphene.Boolean()
-    # TODO add json_ext ?
+    is_offline = graphene.Boolean(required=False)
+    is_photo_fee = graphene.Boolean(required=False)
 
 
 def reset_premium_before_update(premium):
@@ -55,6 +54,7 @@ def update_or_create_premium(data, user):
     if not policy:
         raise Exception(_("policy_uuid_not_found") % (policy_uuid,))
     data["policy"] = policy
+    # TODO verify that the user has access to specified payer_id
     premium_uuid = data.pop("uuid") if "uuid" in data else None
     if premium_uuid:
         premium = Premium.objects.get(uuid=premium_uuid)

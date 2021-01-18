@@ -1,11 +1,12 @@
 import logging
 
 from core.datetimes.shared import datetimedelta
-from django.db import transaction
-from django.db.models import Sum
+from django.db import transaction, connection
+from django.db.models import Sum, F, OuterRef, Max, Subquery, FilteredRelation
 from django.db.transaction import atomic
 from insuree.models import Insuree, Family, InsureePolicy
 from location.models import Location
+from payment.models import Payment, PaymentDetail, PaymentStatusChoices
 from policy.models import Policy
 from product.models import Product
 
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # A fake family is used for funding
 FUNDING_CHF_ID = "999999999"
+
 
 class ByPolicyPremiumsAmountService(object):
 
@@ -123,7 +125,7 @@ def add_fund(product_id, payer_id, pay_date, amount, receipt, audit_user_id, is_
     )
 
     InsureePolicy.objects.create(
-        insuree=insuree,
+        insuree=insuree,  # TODO Might not be assigned
         policy=policy,
         enrollment_date=policy.enroll_date,
         start_date=policy.start_date,
