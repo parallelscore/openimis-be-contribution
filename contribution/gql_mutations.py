@@ -4,6 +4,7 @@ from typing import Optional
 import graphene
 from contribution.apps import ContributionConfig
 from contribution.models import Premium
+from payer.models import Payer
 from core.schema import OpenIMISMutation
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -17,7 +18,7 @@ class PremiumBase:
     id = graphene.Int(required=False, read_only=True)
     uuid = graphene.String(required=False)
     policy_uuid = graphene.String(required=True)
-    payer_id = graphene.String()
+    payer_uuid = graphene.String()
     amount = graphene.Decimal()
     receipt = graphene.String()
     pay_date = graphene.Date()
@@ -61,6 +62,11 @@ def update_or_create_premium(data, user):
         premium.save_history()
         reset_premium_before_update(premium)
         [setattr(premium, k, v) for k, v in data.items()]
+
+        payer_uuid = data.pop("payer_uuid") if "payer_uuid" in data else None
+        payer =  Payer.objects.get(uuid=payer_uuid)
+        if payer_uuid and payer:
+            premium.payer = payer
         premium.save()
     else:
         premium = Premium.objects.create(**data)

@@ -8,7 +8,7 @@ from location.apps import LocationConfig
 from django.utils.translation import gettext as _
 from core.schema import signal_mutation_module_before_mutating, OrderedDjangoFilterConnectionField
 from policy import models as policy_models
-from .models import Premium
+from .models import Premium, PremiumMutation
 # We do need all queries and mutations in the namespace here.
 from .gql_queries import *  # lgtm [py/polluting-import]
 from .gql_mutations import *  # lgtm [py/polluting-import]
@@ -85,6 +85,19 @@ def on_policy_mutation(sender, **kwargs):
                 errors += set_premium_deleted(premium)
     return errors
 
+def on_premium_mutation(sender, **kwargs):
+    uuids = kwargs['data'].get('uuids', [])
+    if not uuids:
+        uuid = kwargs['data'].get('premium_uuid', None)
+        uuids = [uuid] if uuid else []
+    if not uuids:
+        return []
+    impacted_premiums = Premium.objects.filter(uuid__in=uuids).all()
+    for premium in impacted_premiums:
+        PremiumMutation.objects.create(
+            premium=premium, mutation_id=kwargs['mutation_log_id'])
+    return []
 
 def bind_signals():
     signal_mutation_module_before_mutating["policy"].connect(on_policy_mutation)
+    signal_mutation_module_before_mutating["contribution"].connect(on_premium_mutation)
