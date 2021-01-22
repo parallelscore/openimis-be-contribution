@@ -25,6 +25,7 @@ class PremiumBase:
     pay_type = graphene.String(max_length=1)
     is_offline = graphene.Boolean(required=False)
     is_photo_fee = graphene.Boolean(required=False)
+    # json_ext = graphene.types.json.JSONString(required=False)
 
 
 def reset_premium_before_update(premium):
@@ -64,7 +65,7 @@ def update_or_create_premium(data, user):
         [setattr(premium, k, v) for k, v in data.items()]
 
         payer_uuid = data.pop("payer_uuid") if "payer_uuid" in data else None
-        payer =  Payer.objects.get(uuid=payer_uuid)
+        payer = Payer.objects.get(uuid=payer_uuid)
         if payer_uuid and payer:
             premium.payer = payer
         premium.save()

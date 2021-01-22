@@ -47,7 +47,6 @@ class Query(graphene.ObjectType):
             filters.append(Q(**{family_location: parent_location}))
         return gql_optimizer.query(Premium.objects.filter(*filters).all(), info)
 
-
     def resolve_premiums_by_policies(self, info, **kwargs):
         if not info.context.user.has_perms(ContributionConfig.gql_query_premiums_perms):
             raise PermissionDenied(_("unauthorized"))
@@ -85,10 +84,11 @@ def on_policy_mutation(sender, **kwargs):
                 errors += set_premium_deleted(premium)
     return errors
 
+
 def on_premium_mutation(sender, **kwargs):
     uuids = kwargs['data'].get('uuids', [])
     if not uuids:
-        uuid = kwargs['data'].get('premium_uuid', None)
+        uuid = kwargs['data'].get('uuid', None)
         uuids = [uuid] if uuid else []
     if not uuids:
         return []
@@ -97,6 +97,7 @@ def on_premium_mutation(sender, **kwargs):
         PremiumMutation.objects.create(
             premium=premium, mutation_id=kwargs['mutation_log_id'])
     return []
+
 
 def bind_signals():
     signal_mutation_module_before_mutating["policy"].connect(on_policy_mutation)

@@ -1,6 +1,7 @@
 import uuid
 
 from contribution.models import Payer, Premium
+from payer.test_helpers import create_test_payer
 
 
 def create_test_premium(policy_id, with_payer=True, custom_props=None):
