@@ -1,10 +1,12 @@
+from core.models import MutationLog
 from policy.models import Policy
 from typing import Optional
 
 import graphene
 from contribution.apps import ContributionConfig
-from contribution.models import Premium
+from contribution.models import Premium, PremiumMutation
 from payer.models import Payer
+from policy import models as policy_models
 from core.schema import OpenIMISMutation
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -92,7 +94,9 @@ class CreatePremiumMutation(OpenIMISMutation):
                     _("mutation.authentication_required"))
             if not user.has_perms(ContributionConfig.gql_mutation_create_premiums_perms):
                 raise PermissionDenied(_("unauthorized"))
-            update_or_create_premium(data, user)
+            client_mutation_id = data.get("client_mutation_id")
+            premium = update_or_create_premium(data, user)
+            PremiumMutation.object_mutated(user, client_mutation_id=client_mutation_id, premium=premium)
             return None
         except Exception as exc:
             return [{
@@ -173,3 +177,27 @@ def set_premium_deleted(premium):
                 'message': _("contribution.mutation.failed_to_delete_premium") % {'uuid': premium.uuid},
                 'detail': premium.uuid}]
         }
+
+
+def on_policy_mutation(sender, **kwargs):
+    errors = []
+    if kwargs.get("mutation_class") == 'DeletePoliciesMutation':
+        uuids = kwargs['data'].get('uuids', [])
+        policies = policy_models.Policy.objects.prefetch_related("premiums").filter(uuid__in=uuids).all()
+        for policy in policies:
+            for premium in policy.premiums.all():
+                errors += set_premium_deleted(premium)
+    return errors
+
+
+def on_premium_mutation(sender, **kwargs):
+    uuids = kwargs['data'].get('uuids', [])
+    if not uuids:
+        uuid = kwargs['data'].get('uuid', None)
+        uuids = [uuid] if uuid else []
+    if not uuids:
+        return []
+    impacted_premiums = Premium.objects.filter(uuid__in=uuids).all()
+    for premium in impacted_premiums:
+        PremiumMutation.objects.create_or_update(premium=premium, mutation_id=kwargs['mutation_log_id'])
+    return []

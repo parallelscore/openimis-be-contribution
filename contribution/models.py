@@ -35,11 +35,9 @@ class Premium(core_models.VersionedModel):
         db_table = 'tblPremium'
 
 
-class PremiumMutation(core_models.UUIDModel):
-    premium = models.ForeignKey(Premium, models.DO_NOTHING,
-                                related_name='mutations')
-    mutation = models.ForeignKey(
-        core_models.MutationLog, models.DO_NOTHING, related_name='premiums')
+class PremiumMutation(core_models.UUIDModel, core_models.ObjectMutation):
+    premium = models.ForeignKey(Premium, models.DO_NOTHING, related_name='mutations')
+    mutation = models.ForeignKey(core_models.MutationLog, models.DO_NOTHING, related_name='premiums')
 
     class Meta:
         managed = True

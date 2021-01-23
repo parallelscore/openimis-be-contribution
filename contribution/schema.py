@@ -7,8 +7,6 @@ from .apps import ContributionConfig
 from location.apps import LocationConfig
 from django.utils.translation import gettext as _
 from core.schema import signal_mutation_module_before_mutating, OrderedDjangoFilterConnectionField
-from policy import models as policy_models
-from .models import Premium, PremiumMutation
 # We do need all queries and mutations in the namespace here.
 from .gql_queries import *  # lgtm [py/polluting-import]
 from .gql_mutations import *  # lgtm [py/polluting-import]
@@ -17,6 +15,7 @@ from .gql_mutations import *  # lgtm [py/polluting-import]
 class Query(graphene.ObjectType):
     premiums = OrderedDjangoFilterConnectionField(
         PremiumGQLType,
+        client_mutation_id=graphene.String(),
         show_history=graphene.Boolean(),
         parent_location=graphene.String(),
         parent_location_level=graphene.Int(),
@@ -32,6 +31,9 @@ class Query(graphene.ObjectType):
         if not info.context.user.has_perms(ContributionConfig.gql_query_premiums_perms):
             raise PermissionDenied(_("unauthorized"))
         filters = []
+        client_mutation_id = kwargs.get("client_mutation_id", None)
+        if client_mutation_id:
+            filters.append(Q(mutations__mutation__client_mutation_id=client_mutation_id))
         show_history = kwargs.get('show_history', False)
         if not show_history and not kwargs.get('uuid', None):
             filters += filter_validity(**kwargs)
@@ -72,31 +74,6 @@ class Mutation(graphene.ObjectType):
     delete_premium = DeletePremiumsMutation.Field()
     create_premium = CreatePremiumMutation.Field()
     update_premium = UpdatePremiumMutation.Field()
-
-
-def on_policy_mutation(sender, **kwargs):
-    errors = []
-    if kwargs.get("mutation_class") == 'DeletePoliciesMutation':
-        uuids = kwargs['data'].get('uuids', [])
-        policies = policy_models.Policy.objects.prefetch_related("premiums").filter(uuid__in=uuids).all()
-        for policy in policies:
-            for premium in policy.premiums.all():
-                errors += set_premium_deleted(premium)
-    return errors
-
-
-def on_premium_mutation(sender, **kwargs):
-    uuids = kwargs['data'].get('uuids', [])
-    if not uuids:
-        uuid = kwargs['data'].get('uuid', None)
-        uuids = [uuid] if uuid else []
-    if not uuids:
-        return []
-    impacted_premiums = Premium.objects.filter(uuid__in=uuids).all()
-    for premium in impacted_premiums:
-        PremiumMutation.objects.create(
-            premium=premium, mutation_id=kwargs['mutation_log_id'])
-    return []
 
 
 def bind_signals():

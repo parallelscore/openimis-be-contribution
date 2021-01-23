@@ -1,6 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
-from .models import Premium
+from .models import Premium, PremiumMutation
 from core import prefix_filterset, filter_validity, ExtendedConnection
 from policy.schema import PolicyGQLType
 from payer.schema import PayerGQLType
@@ -8,6 +8,7 @@ from payer.schema import PayerGQLType
 
 class PremiumGQLType(DjangoObjectType):
     client_mutation_id = graphene.String()
+
     class Meta:
         model = Premium
         interfaces = (graphene.relay.Node,)
@@ -27,3 +28,8 @@ class PremiumGQLType(DjangoObjectType):
         premium_mutation = self.mutations.select_related(
             'mutation').filter(mutation__status=0).first()
         return premium_mutation.mutation.client_mutation_id if premium_mutation else None
+
+
+class PremiumMutationGQLType(DjangoObjectType):
+    class Meta:
+        model = PremiumMutation
