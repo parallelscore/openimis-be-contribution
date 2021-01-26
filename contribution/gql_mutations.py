@@ -30,7 +30,7 @@ class PremiumBase:
     pay_type = graphene.String(max_length=1)
     is_offline = graphene.Boolean(required=False)
     is_photo_fee = graphene.Boolean(required=False)
-    action = graphene.Enum.from_enum(PremiumUpdateActionEnum)
+    action = graphene.String(required=False)
     # json_ext = graphene.types.json.JSONString(required=False)
 
 
