@@ -11,6 +11,7 @@ from core.schema import OpenIMISMutation
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils.translation import gettext as _
+from core import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,6 @@ def update_or_create_premium(data, user):
         data.pop('client_mutation_id')
     if "client_mutation_label" in data:
         data.pop('client_mutation_label')
-    from core import datetime
     now = datetime.datetime.now()
     data['audit_user_id'] = user.id_for_audit
     data['validity_from'] = now
@@ -66,6 +66,9 @@ def update_or_create_premium(data, user):
     premium_uuid = data.pop("uuid") if "uuid" in data else None
     # action: enforce, suspend, wait
     action = data.pop("action") if "action" in data else None
+    payer_uuid = data.pop("payer_uuid") if "payer_uuid" in data else None
+    if payer_uuid:
+        payer = Payer.objects.get(uuid=payer_uuid)
     if premium_uuid:
         premium = Premium.objects.get(uuid=premium_uuid)
         premium.save_history()
@@ -79,6 +82,9 @@ def update_or_create_premium(data, user):
         premium.save()
     else:
         premium = Premium.objects.create(**data)
+    if payer_uuid and payer:
+        premium.payer = payer
+        premium.save()
     # Handle the policy updating
     premium_updated(premium, action)
     return premium
