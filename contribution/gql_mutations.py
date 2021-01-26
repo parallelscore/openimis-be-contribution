@@ -1,4 +1,4 @@
-from core.models import MutationLog
+from contribution.services import premium_updated, PremiumUpdateActionEnum
 from policy.models import Policy
 from typing import Optional
 
@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class PremiumBase:
+    """
+    This takes most parameters of the Premium with addition of action. This fields allows to force
+    """
     id = graphene.Int(required=False, read_only=True)
     uuid = graphene.String(required=False)
     policy_uuid = graphene.String(required=True)
@@ -27,6 +30,7 @@ class PremiumBase:
     pay_type = graphene.String(max_length=1)
     is_offline = graphene.Boolean(required=False)
     is_photo_fee = graphene.Boolean(required=False)
+    action = graphene.Enum.from_enum(PremiumUpdateActionEnum)
     # json_ext = graphene.types.json.JSONString(required=False)
 
 
@@ -60,6 +64,8 @@ def update_or_create_premium(data, user):
     data["policy"] = policy
     # TODO verify that the user has access to specified payer_id
     premium_uuid = data.pop("uuid") if "uuid" in data else None
+    # action: enforce, suspend, wait
+    action = data.pop("action") if "action" in data else None
     if premium_uuid:
         premium = Premium.objects.get(uuid=premium_uuid)
         premium.save_history()
@@ -73,6 +79,8 @@ def update_or_create_premium(data, user):
         premium.save()
     else:
         premium = Premium.objects.create(**data)
+    # Handle the policy updating
+    premium_updated(premium, action)
     return premium
 
 

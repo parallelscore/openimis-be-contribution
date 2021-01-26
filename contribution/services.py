@@ -144,3 +144,53 @@ def add_fund(product_id, payer_id, pay_date, amount, receipt, audit_user_id, is_
         type=PayTypeChoices.FUNDING
     )
 
+
+class PremiumUpdateActionEnum(Enum):
+    SUSPEND = "SUSPEND"
+    ENFORCE = "ENFORCE"
+    WAIT = "WAIT"
+
+
+def premium_updated(premium, action):
+    """
+    if the contribution is lower than the policy value, action can override it or suspend the policy
+    if it is right or too much, just
+    """
+    policy = premium.policy
+    policy.save_history()
+
+    if action == PremiumUpdateActionEnum.SUSPEND:
+        policy.status = Policy.STATUS_SUSPENDED
+        policy.save()
+        return
+
+    if premium.amount == policy.value:
+        policy.status = Policy.STATUS_ACTIVE
+        policy.effective_date = premium.pay_date if premium.pay_date > policy.start_date else policy.start_date
+    elif premium.amount < policy.value:
+        # suspend already handled
+        if action == PremiumUpdateActionEnum.ENFORCE:
+            policy.status = Policy.STATUS_ACTIVE
+            policy.effective_date = premium.pay_date
+        # otherwise, just leave the policy unchanged
+    elif premium.amount > policy.value:
+        if action != PremiumUpdateActionEnum.ENFORCE:
+            logger.warning("action on premiums larger than the ")
+        policy.status = Policy.STATUS_ACTIVE
+        policy.effective_date = premium.pay_date
+    else:
+        logger.warning("The comparison between premium amount %s and policy value %s failed",
+                       premium.amount, policy.value)
+        raise Exception("Invalid combination or premium and policy amounts")
+
+    if policy.status is not None and (
+            policy.effective_date == premium.pay_date
+            or policy.effective_date == policy.start_date):
+        # Enforcing policy
+        if policy.offline or not premium.is_offline:
+            policy.save()
+        if policy.status == Policy.STATUS_ACTIVE:
+            _update_policy_insurees(policy)
+    elif policy.effective_date:
+        _activate_insurees(policy, premium.pay_date)
+
