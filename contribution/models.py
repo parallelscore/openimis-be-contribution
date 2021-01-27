@@ -23,9 +23,9 @@ class Premium(core_models.VersionedModel):
     amount = models.DecimalField(db_column='Amount', max_digits=18, decimal_places=2)
     receipt = models.CharField(db_column='Receipt', max_length=50)
     pay_date = fields.DateField(db_column='PayDate')
-    pay_type = models.CharField(db_column='PayType', max_length=1, choices=PayTypeChoices.choices)
-    is_photo_fee = models.BooleanField(db_column='isPhotoFee', blank=True, null=True)
-    is_offline = models.BooleanField(db_column='isOffline', blank=True, null=True)
+    pay_type = models.CharField(db_column='PayType', max_length=1)  #, choices=PayTypeChoices.choices
+    is_photo_fee = models.NullBooleanField(db_column='isPhotoFee', blank=True, null=True, default=False)
+    is_offline = models.NullBooleanField(db_column='isOffline', blank=True, null=True, default=False)
     reporting_id = models.IntegerField(db_column='ReportingId', blank=True, null=True)
     audit_user_id = models.IntegerField(db_column='AuditUserID')
     # rowid = models.TextField(db_column='RowID', blank=True, null=True)
