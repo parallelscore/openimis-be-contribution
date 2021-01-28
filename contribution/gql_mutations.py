@@ -213,5 +213,5 @@ def on_premium_mutation(sender, **kwargs):
         return []
     impacted_premiums = Premium.objects.filter(uuid__in=uuids).all()
     for premium in impacted_premiums:
-        PremiumMutation.objects.create_or_update(premium=premium, mutation_id=kwargs['mutation_log_id'])
+        PremiumMutation.objects.update_or_create(premium=premium, mutation_id=kwargs['mutation_log_id'])
     return []
