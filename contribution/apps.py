@@ -4,9 +4,9 @@ MODULE_NAME = "contribution"
 
 DEFAULT_CFG = {
     "gql_query_premiums_perms": ["101301"],
-    "gql_mutation_create_premiums_perms": ["101002"],
-    "gql_mutation_update_premiums_perms": ["101003"],
-    "gql_mutation_delete_premiums_perms": ["101004"],
+    "gql_mutation_create_premiums_perms": ["101302"],
+    "gql_mutation_update_premiums_perms": ["101303"],
+    "gql_mutation_delete_premiums_perms": ["101304"],
 }
 
 
