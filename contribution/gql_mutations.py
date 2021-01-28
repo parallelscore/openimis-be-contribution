@@ -76,9 +76,10 @@ def update_or_create_premium(data, user):
         [setattr(premium, k, v) for k, v in data.items()]
 
         payer_uuid = data.pop("payer_uuid") if "payer_uuid" in data else None
-        payer = Payer.objects.get(uuid=payer_uuid)
-        if payer_uuid and payer:
-            premium.payer = payer
+        if payer_uuid:
+            payer = Payer.filter_queryset().filter(uuid=payer_uuid).first()
+            if payer:
+                premium.payer = payer
         premium.save()
     else:
         premium = Premium.objects.create(**data)
