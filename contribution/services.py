@@ -196,3 +196,17 @@ def premium_updated(premium, action):
     elif policy.effective_date:
         _activate_insurees(policy, premium.pay_date)
 
+
+def _update_policy_insurees(policy):
+    policy.insuree_policies.filter(validity_to__isnull=True).update(
+        effective_date=policy.effective_date,
+        start_date=policy.start_date,
+        expiry_date=policy.expiry_date,
+    )
+
+
+def _activate_insurees(policy, pay_date):
+    policy.insuree_policies.filter(validity_to__isnull=True).update(
+        effective_date=pay_date,
+    )
+
