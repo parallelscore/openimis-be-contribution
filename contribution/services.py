@@ -10,6 +10,7 @@ from location.apps import LocationConfig
 from location.models import Location
 from payment.models import Payment
 from policy.models import Policy
+from policy.services import policy_status_premium_paid
 from product.models import Product
 
 from .models import Premium, PayTypeChoices
@@ -156,30 +157,28 @@ class PremiumUpdateActionEnum(Enum):
 def premium_updated(premium, action):
     """
     if the contribution is lower than the policy value, action can override it or suspend the policy
-    if it is right or too much, just
+    if it is right or too much, just activate it (enforce is still expected but just a warning)
     """
     policy = premium.policy
     policy.save_history()
 
-    if action == PremiumUpdateActionEnum.SUSPEND:
+    if action == PremiumUpdateActionEnum.SUSPEND.value:
         policy.status = Policy.STATUS_SUSPENDED
         policy.save()
         return
 
     if premium.amount == policy.value:
-        policy.status = Policy.STATUS_ACTIVE
-        policy.effective_date = premium.pay_date if premium.pay_date > policy.start_date else policy.start_date
+        policy_status_premium_paid(policy,
+                                   premium.pay_date if premium.pay_date > policy.start_date else policy.start_date)
     elif premium.amount < policy.value:
         # suspend already handled
-        if action == PremiumUpdateActionEnum.ENFORCE:
-            policy.status = Policy.STATUS_ACTIVE
-            policy.effective_date = premium.pay_date
+        if action == PremiumUpdateActionEnum.ENFORCE.value:
+            policy_status_premium_paid(policy, premium.pay_date)
         # otherwise, just leave the policy unchanged
     elif premium.amount > policy.value:
-        if action != PremiumUpdateActionEnum.ENFORCE:
-            logger.warning("action on premiums larger than the ")
-        policy.status = Policy.STATUS_ACTIVE
-        policy.effective_date = premium.pay_date
+        if action != PremiumUpdateActionEnum.ENFORCE.value:
+            logger.warning("action on premiums larger than the policy value")
+        policy_status_premium_paid(policy, premium.pay_date)
     else:
         logger.warning("The comparison between premium amount %s and policy value %s failed",
                        premium.amount, policy.value)
