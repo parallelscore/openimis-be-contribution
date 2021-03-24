@@ -1,4 +1,4 @@
-from contribution.services import premium_updated, PremiumUpdateActionEnum
+from contribution.services import premium_updated
 from policy.models import Policy
 from typing import Optional
 
@@ -67,10 +67,7 @@ def update_or_create_premium(data, user):
     # action: enforce, suspend, wait
     action = data.pop("action") if "action" in data else None
     payer_uuid = data.pop("payer_uuid") if "payer_uuid" in data else None
-    if payer_uuid:
-        payer = Payer.filter_queryset().filter(uuid=payer_uuid).first()
-    else:
-        payer = None
+    payer = Payer.filter_queryset().filter(uuid=payer_uuid).first() if payer_uuid else None
     if premium_uuid:
         premium = Premium.objects.get(uuid=premium_uuid)
         premium.save_history()

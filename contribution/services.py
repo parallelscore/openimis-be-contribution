@@ -2,13 +2,11 @@ import logging
 from enum import Enum
 
 from core.datetimes.shared import datetimedelta
-from django.db import connection
 from django.db.models import Sum
 from django.db.transaction import atomic
 from insuree.models import Insuree, Family, InsureePolicy
 from location.apps import LocationConfig
 from location.models import Location
-from payment.models import Payment
 from policy.models import Policy
 from policy.services import policy_status_premium_paid
 from product.models import Product

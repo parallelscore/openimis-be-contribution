@@ -1,7 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
 from .models import Premium, PremiumMutation
-from core import prefix_filterset, filter_validity, ExtendedConnection
+from core import prefix_filterset, ExtendedConnection
 from policy.schema import PolicyGQLType
 from payer.schema import PayerGQLType
 
