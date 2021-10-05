@@ -37,14 +37,14 @@ def last_date_for_payment(policy_id):
     has_cycle = policy.product.has_cycle()
 
     if policy.stage == 'N':
-        grace_period = policy.product.grace_period
+        grace_period = policy.product.grace_period_enrolment
     elif policy.stage == 'R':
         grace_period = policy.product.grace_period_renewal
     else:
         logger.error("policy stage should be either N or R, policy %s has %s", policy_id, policy.stage)
         raise Exception("policy stage should be either N or R")
 
-    waiting_period = policy.product.waiting_period
+    waiting_period = policy.product.grace_period_payment
 
     if has_cycle:
         # Calculate on fixed cycle
