@@ -9,7 +9,6 @@ from location.apps import LocationConfig
 from location.models import Location
 from policy.models import Policy
 from policy.services import policy_status_premium_paid
-from product.models import Product
 
 from .models import Premium, PayTypeChoices
 
