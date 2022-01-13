@@ -20,28 +20,31 @@ FUNDING_CHF_ID = "999999999"
 
 
 class ByPolicyPremiumsAmountService(object):
-
     def __init__(self, user):
         self.user = user
 
     def request(self, policy_id):
-        return Premium.objects.filter(
-            policy_id=policy_id
-        ).exclude(
-            is_photo_fee=True
-        ).aggregate(Sum('amount'))['amount__sum']
+        return (
+            Premium.objects.filter(policy_id=policy_id)
+            .exclude(is_photo_fee=True)
+            .aggregate(Sum("amount"))["amount__sum"]
+        )
 
 
 def last_date_for_payment(policy_id):
     policy = Policy.objects.get(id=policy_id)
     has_cycle = policy.product.has_cycle()
 
-    if policy.stage == 'N':
+    if policy.stage == "N":
         grace_period = policy.product.grace_period_enrolment
-    elif policy.stage == 'R':
+    elif policy.stage == "R":
         grace_period = policy.product.grace_period_renewal
     else:
-        logger.error("policy stage should be either N or R, policy %s has %s", policy_id, policy.stage)
+        logger.error(
+            "policy stage should be either N or R, policy %s has %s",
+            policy_id,
+            policy.stage,
+        )
         raise Exception("policy stage should be either N or R")
 
     waiting_period = policy.product.grace_period_payment
@@ -53,25 +56,34 @@ def last_date_for_payment(policy_id):
         last_date = start_date + datetimedelta(months=grace_period)
     else:
         # Calculate on Free Cycle
-        if policy.stage == 'N':
+        if policy.stage == "N":
             last_date = policy.enroll_date + datetimedelta(months=waiting_period)
         else:
-            last_date = policy.expiry_date + datetimedelta(days=1) + datetimedelta(months=waiting_period)
+            last_date = (
+                policy.expiry_date
+                + datetimedelta(days=1)
+                + datetimedelta(months=waiting_period)
+            )
 
     return last_date - datetimedelta(days=1)
 
 
+def can_payer_fund_product(payer, product):
+    if not product.location:
+        return True
+    elif product.location == payer.location:
+        return True
+    elif product.location.type == "R" and payer.location.parent == product.location:
+        return True
+    elif product.location.type == "D" and payer.location == product.location.parent:
+        return True
+
+    return False
+
+
 @atomic
-def add_fund(product_id, payer_id, pay_date, amount, receipt, audit_user_id, is_offline):
-    product = Product.objects.filter(validity_to__isnull=True).get(id=product_id)
-    # TODO check and/or document premium_adult
-    product_value = product.lump_sum or product.premium_adult
-
-    # Check if the family with CHFID
-    # Original procedure here has a strange and useless join on isnull(,0), ignoring
-    family = Insuree.objects.filter(validity_to__isnull=True).filter(chf_id=FUNDING_CHF_ID)\
-        .filter(family__location_id=product.location_id).first()
-
+def add_fund(payer, product, pay_date, amount, receipt, audit_user_id, is_offline):
+    # We create fake locations for fundings
     fundings = []
     funding_parent = None  # Top Funding has no parent, then the loop will chain them
     for level in LocationConfig.location_types:
@@ -87,62 +99,84 @@ def add_fund(product_id, payer_id, pay_date, amount, receipt, audit_user_id, is_
         if funding_created:
             logger.warning("Created funding at level %s", level)
 
+    if product.validity_to is not None:
+        raise ValueError("Product has to be valid")
+
+    if not can_payer_fund_product(payer, product):
+        raise ValueError("Payer and product locations are incompatible")
+
+    # TODO check and/or document premium_adult
+    product_value = product.lump_sum or product.premium_adult
+
+    # Check if the family with CHFID exists
+    # Original procedure here has a strange and useless join on isnull(,0), ignoring
+    family = (
+        Family.objects.filter(validity_to__isnull=True)
+        .filter(head_insuree__chf_id=FUNDING_CHF_ID)
+        .filter(location_id=product.location_id)
+        .first()
+    )
+
     if not family:
-        family = Family.objects.create(
-            location_id=product.location_id,
-            poverty=False,
-            is_offline=is_offline,
-            audit_user_id=audit_user_id,
-        )
         insuree = Insuree.objects.create(
             family=family,
             chf_id=FUNDING_CHF_ID,
             last_name="Funding",
             other_names="Funding",
-            pay_date=pay_date,
             gender=None,
             marital=None,
             head=True,
             card_issued=False,
+            dob=pay_date,
             audit_user_id=audit_user_id,
-            is_offline=is_offline,
+            offline=is_offline,
         )
-        family.head_insuree = insuree
-        family.save()
+        family = Family.objects.create(
+            head_insuree=insuree,
+            location_id=product.location_id,
+            poverty=False,
+            is_offline=is_offline,
+            audit_user_id=audit_user_id,
+        )
 
     from core import datetimedelta
+
     policy = Policy.objects.create(
         family=family,
         enroll_date=pay_date,
         start_date=pay_date,
         effective_date=pay_date,
-        expiry_date=pay_date + datetimedelta(months=product.insurance_period),
+        expiry_date=datetimedelta(months=product.insurance_period).add_to_date(
+            pay_date
+        ),
         status=Policy.STATUS_ACTIVE,
         value=product_value,
         product=product,
         officer_id=None,
         audit_user_id=audit_user_id,
-        is_offline=is_offline,
+        offline=is_offline,
     )
 
     InsureePolicy.objects.create(
-        insuree=insuree,  # TODO Might not be assigned
+        insuree=family.head_insuree,
         policy=policy,
         enrollment_date=policy.enroll_date,
         start_date=policy.start_date,
         effective_date=policy.effective_date,
         expiry_date=policy.expiry_date,
         audit_user_id=audit_user_id,
-        is_offline=is_offline,
+        offline=is_offline,
     )
 
-    Premium.objects.create(
+    return Premium.objects.create(
         policy=policy,
-        payer_id=payer_id,
+        payer_id=payer.id,
         amount=amount,
         receipt=receipt,
         pay_date=pay_date,
-        type=PayTypeChoices.FUNDING
+        pay_type=PayTypeChoices.FUNDING,
+        is_offline=is_offline,
+        audit_user_id=audit_user_id,
     )
 
 
@@ -166,8 +200,12 @@ def premium_updated(premium, action):
         return
 
     if premium.amount == policy.value:
-        policy_status_premium_paid(policy,
-                                   premium.pay_date if premium.pay_date > policy.start_date else policy.start_date)
+        policy_status_premium_paid(
+            policy,
+            premium.pay_date
+            if premium.pay_date > policy.start_date
+            else policy.start_date,
+        )
     elif premium.amount < policy.value:
         # suspend already handled
         if action == PremiumUpdateActionEnum.ENFORCE.value:
@@ -178,13 +216,17 @@ def premium_updated(premium, action):
             logger.warning("action on premiums larger than the policy value")
         policy_status_premium_paid(policy, premium.pay_date)
     else:
-        logger.warning("The comparison between premium amount %s and policy value %s failed",
-                       premium.amount, policy.value)
+        logger.warning(
+            "The comparison between premium amount %s and policy value %s failed",
+            premium.amount,
+            policy.value,
+        )
         raise Exception("Invalid combination or premium and policy amounts")
 
     if policy.status is not None and (
-            policy.effective_date == premium.pay_date
-            or policy.effective_date == policy.start_date):
+        policy.effective_date == premium.pay_date
+        or policy.effective_date == policy.start_date
+    ):
         # Enforcing policy
         if policy.offline or not premium.is_offline:
             policy.save()
@@ -206,4 +248,3 @@ def _activate_insurees(policy, pay_date):
     policy.insuree_policies.filter(validity_to__isnull=True).update(
         effective_date=pay_date,
     )
-
