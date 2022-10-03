@@ -37,10 +37,10 @@ class Premium(core_models.VersionedModel):
     pay_type = models.CharField(
         db_column="PayType", max_length=1
     )  # , choices=PayTypeChoices.choices
-    is_photo_fee = models.NullBooleanField(
+    is_photo_fee = models.BooleanField(
         db_column="isPhotoFee", blank=True, null=True, default=False
     )
-    is_offline = models.NullBooleanField(
+    is_offline = models.BooleanField(
         db_column="isOffline", blank=True, null=True, default=False
     )
     reporting_id = models.IntegerField(db_column="ReportingId", blank=True, null=True)
