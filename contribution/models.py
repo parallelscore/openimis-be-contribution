@@ -16,18 +16,35 @@ class PayTypeChoices(models.TextChoices):
 
 
 class Premium(core_models.VersionedModel):
-    id = models.AutoField(db_column='PremiumId', primary_key=True)
-    uuid = models.CharField(db_column='PremiumUUID', max_length=36, default=uuid.uuid4, unique=True)
-    policy = models.ForeignKey(Policy, models.DO_NOTHING, db_column='PolicyID', related_name="premiums")
-    payer = models.ForeignKey(Payer, models.DO_NOTHING, db_column='PayerID', blank=True, null=True)
-    amount = models.DecimalField(db_column='Amount', max_digits=18, decimal_places=2)
-    receipt = models.CharField(db_column='Receipt', max_length=50)
-    pay_date = fields.DateField(db_column='PayDate')
-    pay_type = models.CharField(db_column='PayType', max_length=1)  #, choices=PayTypeChoices.choices
-    is_photo_fee = models.NullBooleanField(db_column='isPhotoFee', blank=True, null=True, default=False)
-    is_offline = models.NullBooleanField(db_column='isOffline', blank=True, null=True, default=False)
-    reporting_id = models.IntegerField(db_column='ReportingId', blank=True, null=True)
-    audit_user_id = models.IntegerField(db_column='AuditUserID')
+    id = models.AutoField(db_column="PremiumId", primary_key=True)
+    uuid = models.CharField(
+        db_column="PremiumUUID", max_length=36, default=uuid.uuid4, unique=True
+    )
+    policy = models.ForeignKey(
+        Policy, models.DO_NOTHING, db_column="PolicyID", related_name="premiums"
+    )
+    payer = models.ForeignKey(
+        Payer,
+        models.DO_NOTHING,
+        db_column="PayerID",
+        blank=True,
+        null=True,
+        related_name="premiums",
+    )
+    amount = models.DecimalField(db_column="Amount", max_digits=18, decimal_places=2)
+    receipt = models.CharField(db_column="Receipt", max_length=50)
+    pay_date = fields.DateField(db_column="PayDate")
+    pay_type = models.CharField(
+        db_column="PayType", max_length=1
+    )  # , choices=PayTypeChoices.choices
+    is_photo_fee = models.NullBooleanField(
+        db_column="isPhotoFee", blank=True, null=True, default=False
+    )
+    is_offline = models.NullBooleanField(
+        db_column="isOffline", blank=True, null=True, default=False
+    )
+    reporting_id = models.IntegerField(db_column="ReportingId", blank=True, null=True)
+    audit_user_id = models.IntegerField(db_column="AuditUserID")
     # rowid = models.TextField(db_column='RowID', blank=True, null=True)
 
     class Meta:
