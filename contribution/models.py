@@ -47,7 +47,7 @@ class Premium(core_models.VersionedModel):
     )
     reporting_id = models.IntegerField(db_column="ReportingId", blank=True, null=True)
     audit_user_id = models.IntegerField(db_column="AuditUserID")
-    created_date = models.DateTimeField(db_column="CreatedDate", default=datetime.now())
+    created_date = models.DateTimeField(db_column="CreatedDate", default=datetime.now)
     # rowid = models.TextField(db_column='RowID', blank=True, null=True)
 
     class Meta:
