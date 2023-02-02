@@ -8,6 +8,7 @@ from core.schema import signal_mutation_module_before_mutating, OrderedDjangoFil
 # We do need all queries and mutations in the namespace here.
 from .gql_queries import *  # lgtm [py/polluting-import]
 from .gql_mutations import *  # lgtm [py/polluting-import]
+from .services import check_unique_premium_receipt_code
 
 
 class Query(graphene.ObjectType):
@@ -23,6 +24,11 @@ class Query(graphene.ObjectType):
         PremiumGQLType,
         policy_uuids=graphene.List(graphene.String, required=True),
         orderBy=graphene.List(of_type=graphene.String),
+    )
+    validate_premium_code = graphene.Field(
+        graphene.Boolean,
+        code=graphene.String(required=True),
+        description="Checks that the specified premium code is unique."
     )
 
     def resolve_premiums(self, info, **kwargs):
@@ -52,6 +58,10 @@ class Query(graphene.ObjectType):
             raise PermissionDenied(_("unauthorized"))
         policies = policy_models.Policy.objects.values_list('id').filter(Q(uuid__in=kwargs.get('policy_uuids')))
         return Premium.objects.filter(Q(policy_id__in=policies), *filter_validity(**kwargs))
+
+    def resolve_validate_premium_code(self, info, **kwargs):
+        errors = check_unique_premium_receipt_code(code=kwargs['code'])
+        return False if errors else True
 
 
 def set_premium_deleted(premium):
