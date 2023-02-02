@@ -28,7 +28,8 @@ class Query(graphene.ObjectType):
     validate_premium_code = graphene.Field(
         graphene.Boolean,
         code=graphene.String(required=True),
-        description="Checks that the specified premium code is unique."
+        policy_id=graphene.String(required=True),
+        description="Checks that the specified premium code is unique for a given policy."
     )
 
     def resolve_premiums(self, info, **kwargs):
@@ -60,7 +61,7 @@ class Query(graphene.ObjectType):
         return Premium.objects.filter(Q(policy_id__in=policies), *filter_validity(**kwargs))
 
     def resolve_validate_premium_code(self, info, **kwargs):
-        errors = check_unique_premium_receipt_code(code=kwargs['code'])
+        errors = check_unique_premium_receipt_code(code=kwargs['code'], policy_id=kwargs['policy_id'])
         return False if errors else True
 
 

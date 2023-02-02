@@ -249,8 +249,8 @@ def _activate_insurees(policy, pay_date):
     )
 
 
-def check_unique_premium_receipt_code(code):
+def check_unique_premium_receipt_code(code, policy_id):
     from .models import Premium
-    if Premium.objects.filter(receipt=code, validity_to__isnull=True).exists():
+    if Premium.objects.filter(receipt=code, policy=policy_id, validity_to__isnull=True).exists():
         return [{"message": "Premium code %s already exists" % code}]
     return []
