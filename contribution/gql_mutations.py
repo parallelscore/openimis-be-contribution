@@ -12,6 +12,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils.translation import gettext as _
 from core import datetime
+from .services import check_unique_premium_receipt_code_within_product
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,17 @@ def reset_premium_before_update(premium):
 
 
 def update_or_create_premium(data, user):
+    if "uuid" in data:
+        incoming_premium_receipt = data['receipt']
+        current_premium_receipt = Premium.objects.get(uuid=data['uuid']).receipt
+        if current_premium_receipt != incoming_premium_receipt:
+            if check_unique_premium_receipt_code_within_product(code=data['receipt'], policy_uuid=data['policy_uuid']):
+                raise ValidationError(
+                    _("mutation.code_already_taken"))
+    else:
+        if check_unique_premium_receipt_code_within_product(code=data['receipt'], policy_uuid=data['policy_uuid']):
+            raise ValidationError(
+                _("mutation.code_already_taken"))
     if "client_mutation_id" in data:
         data.pop('client_mutation_id')
     if "client_mutation_label" in data:
