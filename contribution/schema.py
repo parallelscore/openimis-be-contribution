@@ -61,6 +61,8 @@ class Query(graphene.ObjectType):
         return Premium.objects.filter(Q(policy_id__in=policies), *filter_validity(**kwargs))
 
     def resolve_validate_premium_code(self, info, **kwargs):
+        if not info.context.user.has_perms(ContributionConfig.gql_query_premiums_perms):
+            raise PermissionDenied(_("unauthorized"))
         errors = check_unique_premium_receipt_code_within_product(code=kwargs['code'],
                                                                   policy_uuid=kwargs['policy_uuid'])
         return False if errors else True
