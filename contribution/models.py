@@ -4,6 +4,8 @@ from core import fields
 from core import models as core_models
 from django.db import models
 from django.utils.translation import gettext_lazy
+
+from core.datetimes.ad_datetime import datetime
 from policy.models import Policy
 from payer.models import Payer
 
@@ -45,10 +47,11 @@ class Premium(core_models.VersionedModel):
     )
     reporting_id = models.IntegerField(db_column="ReportingId", blank=True, null=True)
     audit_user_id = models.IntegerField(db_column="AuditUserID")
+    created_date = models.DateTimeField(db_column="CreatedDate", default=datetime.now)
     # rowid = models.TextField(db_column='RowID', blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'tblPremium'
 
 
