@@ -33,7 +33,8 @@ class Premium(core_models.VersionedModel):
         null=True,
         related_name="premiums",
     )
-    amount = models.DecimalField(db_column="Amount", max_digits=18, decimal_places=2)
+    amount = models.DecimalField(
+        db_column="Amount", max_digits=18, decimal_places=2)
     receipt = models.CharField(db_column="Receipt", max_length=50)
     pay_date = fields.DateField(db_column="PayDate")
     pay_type = models.CharField(
@@ -45,9 +46,11 @@ class Premium(core_models.VersionedModel):
     is_offline = models.BooleanField(
         db_column="isOffline", blank=True, null=True, default=False
     )
-    reporting_id = models.IntegerField(db_column="ReportingId", blank=True, null=True)
+    reporting_id = models.IntegerField(
+        db_column="ReportingId", blank=True, null=True)
     audit_user_id = models.IntegerField(db_column="AuditUserID")
-    created_date = models.DateTimeField(db_column="CreatedDate", default=datetime.now)
+    created_date = models.DateTimeField(
+        db_column="CreatedDate", default=datetime.now)
     # rowid = models.TextField(db_column='RowID', blank=True, null=True)
 
     class Meta:
@@ -56,8 +59,10 @@ class Premium(core_models.VersionedModel):
 
 
 class PremiumMutation(core_models.UUIDModel, core_models.ObjectMutation):
-    premium = models.ForeignKey(Premium, models.DO_NOTHING, related_name='mutations')
-    mutation = models.ForeignKey(core_models.MutationLog, models.DO_NOTHING, related_name='premiums')
+    premium = models.ForeignKey(
+        Premium, models.DO_NOTHING, related_name='mutations')
+    mutation = models.ForeignKey(
+        core_models.MutationLog, models.DO_NOTHING, related_name='premiums')
 
     class Meta:
         managed = True
